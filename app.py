@@ -1,7 +1,12 @@
-from flask import Flask, render_template, request, jsonify
-import requests
-from bs4 import BeautifulSoup
-import time
+from flask import Flask, jsonify, request, send_from_directory
+import os
+
+# Set root directory for static/template files
+app = Flask(__name__, static_folder='.', template_folder='.')
+
+@app.route('/')
+def home():
+    return send_from_directory('.', 'index.html')
 
 app = Flask(__name__)
 
