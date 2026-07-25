@@ -1,12 +1,12 @@
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, render_template, request, jsonify
 import os
 
 # Set root directory for static/template files
-app = Flask(__name__, static_folder='.', template_folder='.')
+app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return send_from_directory('.', 'index.html')
+    return render_template('index.html')
 
 app = Flask(__name__)
 
