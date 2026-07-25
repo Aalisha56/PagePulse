@@ -1,12 +1,8 @@
 from flask import Flask, render_template, request, jsonify
 import os
-
-# Set root directory for static/template files
-app = Flask(__name__)
-
-@app.route('/')
-def home():
-    return render_template('index.html')
+import time
+import requests
+from bs4 import BeautifulSoup
 
 app = Flask(__name__)
 
@@ -18,23 +14,24 @@ def home():
 
 @app.route("/analyze", methods=["POST"])
 def analyze():
-
     data = request.get_json()
     url = data.get("url", "").strip()
+
+    # -------------------------------------------------------------
+    # HERE IS THE AUTO-FIX:
+    # Agar URL mein http:// ya https:// nahi hai, toh automatic add kar do
+    # -------------------------------------------------------------
+    if url and not url.startswith(("http://", "https://")):
+        url = "https://" + url
 
     if not url:
         return jsonify({"error": "Please enter a website URL."}), 400
 
     try:
-
         start = time.time()
 
         response = requests.get(
-            url,
-            timeout=10,
-            headers={
-                "User-Agent": "Mozilla/5.0"
-            }
+            url, timeout=10, headers={"User-Agent": "Mozilla/5.0"}
         )
 
         end = time.time()
@@ -42,9 +39,9 @@ def analyze():
         content_type = response.headers.get("Content-Type", "")
 
         if "text/html" not in content_type:
-            return jsonify({
-                "error": "This URL does not contain an HTML webpage."
-            }), 400
+            return jsonify(
+                {"error": "This URL does not contain an HTML webpage."}
+            ), 400
 
         soup = BeautifulSoup(response.text, "html.parser")
 
@@ -62,10 +59,7 @@ def analyze():
 
         images = soup.find_all("img")
 
-        missing_alt = len([
-            img for img in images
-            if not img.get("alt")
-        ])
+        missing_alt = len([img for img in images if not img.get("alt")])
 
         words = len(soup.get_text(separator=" ").split())
 
@@ -76,28 +70,20 @@ def analyze():
             "meta_description": meta_description,
             "h1_count": h1_count,
             "missing_alt": missing_alt,
-            "word_count": words
+            "word_count": words,
         })
 
     except requests.exceptions.MissingSchema:
-        return jsonify({
-            "error": "Invalid URL format."
-        }), 400
+        return jsonify({"error": "Invalid URL format."}), 400
 
     except requests.exceptions.ConnectionError:
-        return jsonify({
-            "error": "Unable to connect to this website."
-        }), 400
+        return jsonify({"error": "Unable to connect to this website."}), 400
 
     except requests.exceptions.Timeout:
-        return jsonify({
-            "error": "The website took too long to respond."
-        }), 400
+        return jsonify({"error": "The website took too long to respond."}), 400
 
     except Exception as e:
-        return jsonify({
-            "error": str(e)
-        }), 400
+        return jsonify({"error": str(e)}), 400
 
 
 if __name__ == "__main__":
